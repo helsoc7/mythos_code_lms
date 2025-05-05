@@ -47,37 +47,56 @@ export function Sidebar() {
   const [courses, setCourses] = useState<Course[]>([])
   const [classes, setClasses] = useState<Class[]>([])
   
-  // Beim ersten Laden Demo-Daten anzeigen
+  // Daten vom Server laden - in diesem Fall Kurse aus der Datenbank
   useEffect(() => {
-    // In einer echten Anwendung würden hier die Daten vom Server geladen werden
-    setTimeout(() => {
-      setCourses([
-        { id: '1', name: 'Python Grundlagen' },
-        { id: '2', name: 'Objektorientierte Programmierung' },
-        { id: '3', name: 'Backend-Entwicklung' },
-        { id: '4', name: 'Webentwicklung mit Flask' },
-        { id: '5', name: 'Datenbanken' }
-      ])
+    async function fetchCourses() {
+      try {
+        // Versuche, Kurse aus der API zu laden
+        const response = await fetch('/api/courses')
+        if (response.ok) {
+          const data = await response.json()
+          setCourses(data)
+        } else {
+          throw new Error('API-Aufruf fehlgeschlagen')
+        }
+      } catch (error) {
+        console.error('Fehler beim Laden der Kurse:', error)
+        // Fallback auf Demo-Daten bei Fehler
+        setCourses([
+          { id: 'pcep-course', name: 'PCEP Vorbereitung' },
+          { id: 'data-science', name: 'Data Science Basics' },
+          { id: 'web-dev', name: 'Web Development' }
+        ])
+      }
       
+      // Klassen laden (in einer vollständigen Implementierung)
       setClasses([
         { id: '1', name: 'Frontend 2023 Campus Berlin' },
         { id: '2', name: 'Backend 2024 Campus München' }
       ])
       
       setLoading(false)
-    }, 1000)
+    }
+    
+    fetchCourses()
   }, [])
   
-  // Navigations-Links
+  // Angepasste Navigations-Links mit hervorgehobenen Kurs-Routen
   const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: Home },
+    { href: '/courses', label: 'Kurse', icon: BookOpen }, // Neue Route für Kurse
     { href: '/exam-mode', label: 'Prüfungsmodus', icon: CheckSquare },
     { href: '/quiz', label: 'Fragenkatalog', icon: FileText },
     { href: '/statistics', label: 'Statistiken', icon: BarChart2 },
-    { href: '/board', label: 'Board', icon: BarChart2 },
   ]
   
-  const isActive = (path: string) => pathname === path
+  // Aktive Route prüfen - auch für Kurs-Unterrouten
+  const isActive = (path: string) => {
+    if (path === '/courses' && pathname?.startsWith('/courses/')) {
+      return true
+    }
+    return pathname === path
+  }
 
   return (
     <>
@@ -127,6 +146,7 @@ export function Sidebar() {
 
         <ScrollArea className="flex-1 px-3 py-4">
           <nav className="flex flex-col gap-2">
+            {/* Haupt-Navigation */}
             {navItems.map((item, i) => (
               <Link 
                 key={i} 
@@ -148,7 +168,7 @@ export function Sidebar() {
             {/* Trennlinie */}
             <div className="my-2 border-t border-border" />
 
-            {/* Meine Kurse */}
+            {/* Kurse-Liste - jetzt als direkte Links zu den Kursen */}
             <Collapsible 
               open={coursesOpen} 
               onOpenChange={setCoursesOpen}
@@ -158,7 +178,7 @@ export function Sidebar() {
                 <div className="flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground cursor-pointer">
                   <div className="flex items-center gap-3">
                     <BookOpen className="h-4 w-4" />
-                    <span>Meine Kurse</span>
+                    <span>Kurse</span>
                   </div>
                   <ChevronDown className={cn("h-4 w-4 transition-transform", coursesOpen && "rotate-180")} />
                 </div>
@@ -179,7 +199,10 @@ export function Sidebar() {
                       href={`/courses/${course.id}`}
                       onClick={() => setMobileOpen(false)}
                     >
-                      <span className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground text-muted-foreground">
+                      <span className={cn(
+                        "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground text-muted-foreground",
+                        pathname?.startsWith(`/courses/${course.id}`) ? "bg-accent/50 text-foreground" : ""
+                      )}>
                         <span>{course.name}</span>
                       </span>
                     </Link>
@@ -187,13 +210,29 @@ export function Sidebar() {
                 ) : (
                   <p className="text-sm text-muted-foreground py-2 px-3">Keine Kurse gefunden</p>
                 )}
+                
+                {/* Alle Kurse Link */}
                 <Link 
                   href="/courses" 
-                  className="text-sm text-primary hover:underline mt-2 inline-block px-3"
+                  className={cn(
+                    "text-sm text-primary hover:underline mt-2 inline-block px-3",
+                    pathname === "/courses" ? "font-medium" : ""
+                  )}
                   onClick={() => setMobileOpen(false)}
                 >
                   Alle Kurse anzeigen
                 </Link>
+                
+                {/* Für Admins: Link zum Erstellen eines neuen Kurses */}
+                {(session?.user?.role === "ADMIN" || session?.user?.role === "TEACHER") && (
+                  <Link 
+                    href="/admin/courses/new" 
+                    className="text-sm text-primary hover:underline mt-1 inline-block px-3"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    + Neuen Kurs erstellen
+                  </Link>
+                )}
               </CollapsibleContent>
             </Collapsible>
 
@@ -228,7 +267,10 @@ export function Sidebar() {
                       href={`/classes/${cls.id}`}
                       onClick={() => setMobileOpen(false)}
                     >
-                      <span className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground text-muted-foreground">
+                      <span className={cn(
+                        "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground text-muted-foreground",
+                        pathname?.startsWith(`/classes/${cls.id}`) ? "bg-accent/50 text-foreground" : ""
+                      )}>
                         <span>{cls.name}</span>
                       </span>
                     </Link>
@@ -247,7 +289,10 @@ export function Sidebar() {
                   href="/admin" 
                   onClick={() => setMobileOpen(false)}
                 >
-                  <span className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground text-muted-foreground">
+                  <span className={cn(
+                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground text-muted-foreground",
+                    pathname?.startsWith('/admin') ? "bg-accent text-accent-foreground" : ""
+                  )}>
                     <GraduationCap className="h-4 w-4" />
                     <span className={cn("transition-opacity", !open && "hidden lg:opacity-0")}>Admin-Bereich</span>
                   </span>

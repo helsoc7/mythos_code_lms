@@ -6,12 +6,23 @@ export async function GET(req: NextRequest) {
   try {
     const user = await getUserFromToken(req)
     const lang = req.nextUrl.searchParams.get('lang') || 'de'
+    const courseId = req.nextUrl.searchParams.get('courseId') // NEU
 
     if (!user) {
       return NextResponse.json({ error: "Nicht eingeloggt oder Token ungültig" }, { status: 401 })
     }
 
     const progress = user.progress
+
+
+    const whereClause = {
+      language: lang,
+    }
+    
+    // Wenn courseId gegeben ist, zum Filterkriterium hinzufügen
+    if (courseId) {
+      whereClause.courseId = courseId
+    }
 
     // Alle verfügbaren Fragen für die gewählte Sprache laden
     const allQuestions = await prisma.question.findMany({
@@ -24,9 +35,7 @@ export async function GET(req: NextRequest) {
         explanation: true,
         explanationWrong: true,
       },
-      where: {
-        language: lang
-      }
+      where: whereClause
     })
 
     // Fragen parsen

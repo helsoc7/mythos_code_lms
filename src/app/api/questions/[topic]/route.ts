@@ -10,12 +10,21 @@ export async function GET(
   try {
   const { topic } = context.params
   const lang = req.nextUrl.searchParams.get('lang') || 'de'
+  const courseId = req.nextUrl.searchParams.get('courseId') // NEU: Kurs-Parameter auslesen
+
+
+  const whereClause = {
+    topic,
+    language: lang,
+  }
+  
+  // Wenn courseId gegeben ist, zum Filterkriterium hinzufügen
+  if (courseId) {
+    whereClause.courseId = courseId
+  }
 
   const questions = await prisma.question.findMany({
-    where: { 
-      topic,
-      language: lang,
-    },
+    where: whereClause,
   })
 
   return NextResponse.json(
