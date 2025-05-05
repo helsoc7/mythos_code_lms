@@ -3,6 +3,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Button } from '@/components/ui/button'
 import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
+import { Shuffle } from 'lucide-react'
 
 export default async function CoursePage({ params }: { params: { courseId: string }}) {
   const { courseId } = params
@@ -55,6 +56,27 @@ export default async function CoursePage({ params }: { params: { courseId: strin
             <Button asChild className="w-full">
               <Link href={`/courses/${courseId}/quiz`}>
                 Themen anzeigen
+              </Link>
+            </Button>
+          </CardFooter>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shuffle className="h-4 w-4" />
+              Shuffle Modus
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-4">
+              Beantworte Fragen zu allen Themen im Zufalls-Modus
+            </p>
+          </CardContent>
+          <CardFooter>
+            <Button asChild className="w-full">
+              <Link href={`/courses/${courseId}/shuffle-mode`}>
+                Starten
               </Link>
             </Button>
           </CardFooter>
